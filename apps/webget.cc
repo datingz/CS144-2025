@@ -25,7 +25,7 @@ void get_URL( const string& host, const string& path )
   string buffer = "";
   while(!tcp.eof()){
     tcp.read(buffer);
-    cout << buffer << endl;
+    cout << buffer;
   }
   tcp.close();
 }
