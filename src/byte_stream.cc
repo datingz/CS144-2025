@@ -13,7 +13,14 @@ using namespace std;
   // uint64_t bytes_buffered_;
   // uint64_t bytes_popped_;
   // uint64_t bytes_pushed_;
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), buffer_( 0 ), is_closed_( false ), available_capacity_( capacity ), bytes_buffered_( 0 ), bytes_popped_( 0 ), bytes_pushed_( 0 ) {}
+ByteStream::ByteStream( uint64_t capacity ) : 
+capacity_( capacity )
+, buffer_{}
+, is_closed_( false )
+, available_capacity_( capacity )
+, bytes_buffered_( 0 )
+, bytes_popped_( 0 )
+, bytes_pushed_( 0 ) {}
 
 // Push data to stream, but only as much as available capacity allows.
 void Writer::push( string data )
