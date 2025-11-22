@@ -11,7 +11,8 @@ public:
   : output_( std::move( output ) )
   , expected_index_( 0 )
   , buffer_ {}
-  , received_last_substring_(false){}
+  , received_last_substring_(false)
+  , EOF_index_(false){}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -51,5 +52,6 @@ private:
   uint64_t expected_index_;
   std::map<uint64_t, std::string> buffer_;
   bool received_last_substring_;
+  uint64_t EOF_index_;
   
 };
