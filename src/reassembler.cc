@@ -23,7 +23,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
       return;
   }
 
-  // insert except the index out of range
+ // insert except the index out of range
   uint64_t exp_index = this->expected_index_;
   uint64_t tail_index = first_index + data.size();
   uint64_t bound_index = exp_index + this->output_.writer().available_capacity() - 1;
@@ -59,7 +59,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
         break;
       }
     }
-    it = this->buffer_.upper_bound( first_index );
+
     if( it != this->buffer_.end()){
       r_index = it->first;
       data = data.substr( 0, r_index - first_index );
@@ -79,8 +79,11 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     }
   }
 
-  // insert
-  this->buffer_.emplace( first_index, data );
+  if(!data.empty()){
+    this->buffer_.emplace( first_index, std::move(data) );
+  } else{
+    return;
+  }
 
   // find the minimun index
   // decide push or not
@@ -100,14 +103,16 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
       }
       uint64_t a = this->output_.writer().available_capacity();
       if ( len <= a ) {
-        this->output_.writer().push( this->buffer_.begin()->second );
+        std::string push_data = std::move(this->buffer_.begin()->second);
+        this->output_.writer().push( std::move(push_data) );
         this->buffer_.erase( this->buffer_.begin() );
         exp_index += len;
       } else {
         std::string temp = this->buffer_.begin()->second.substr( a );
-        this->output_.writer().push( this->buffer_.begin()->second.substr( 0, a ) );
+        std::string push_data = this->buffer_.begin()->second.substr( 0, a );
+        this->output_.writer().push( std::move(push_data) );
         this->buffer_.erase( this->buffer_.begin() );
-        this->buffer_.emplace( min_index + a, temp );
+        this->buffer_.emplace( min_index + a, std::move(temp) );
         exp_index += a;
         break;
       }

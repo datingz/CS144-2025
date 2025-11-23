@@ -29,11 +29,11 @@ void Writer::push( string data )
   if(s > a){
     string sub = data.substr(0, a);
     if(!sub.empty()){
-      this->buffer_.push_back(sub);
+      this->buffer_.push_back(std::move(sub));
     }
     s = a;
   } else{
-    this->buffer_.push_back(data);   
+    this->buffer_.push_back(std::move(data));   
   }
   // updata state 
   this->bytes_pushed_ += s;
@@ -100,7 +100,7 @@ void Reader::pop( uint64_t len )
       len = 0;
       this->buffer_.pop_front();
       if(!sub.empty()){
-        this->buffer_.push_front(sub);
+        this->buffer_.push_front(std::move(sub));
       }
     } else{
       len -= s;
