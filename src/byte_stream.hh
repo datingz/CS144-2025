@@ -21,6 +21,7 @@ public:
 
   void set_error() { error_ = true; };       // Signal that the stream suffered an error.
   bool has_error() const { return error_; }; // Has the stream had an error?
+  void write_block(const char* data, size_t len);
 
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
@@ -32,6 +33,8 @@ protected:
   uint64_t bytes_buffered_;
   uint64_t bytes_popped_;
   uint64_t bytes_pushed_;
+  std::string block_;
+  uint64_t block_size_;
 
 };
 

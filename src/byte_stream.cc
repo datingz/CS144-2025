@@ -2,18 +2,29 @@
 #include "debug.hh"
 #include <iostream>
 
+#define BLOCK_MAX_SIZE 4096
 
 using namespace std;
 
-  // uint64_t capacity_;
-  // bool error_ {};
-  // std::deque<std::string> buffer_;
-  // bool is_closed_;
-  // uint64_t available_capacity_;
-  // uint64_t bytes_buffered_;
-  // uint64_t bytes_popped_;
-  // uint64_t bytes_pushed_;
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), buffer_{}, is_closed_( false ), available_capacity_( capacity ), bytes_buffered_( 0 ), bytes_popped_( 0 ), bytes_pushed_( 0 ) {}
+ByteStream::ByteStream( uint64_t capacity ) 
+: capacity_( capacity )
+, buffer_{}, is_closed_( false )
+, available_capacity_( capacity )
+, bytes_buffered_( 0 )
+, bytes_popped_( 0 )
+, bytes_pushed_( 0 ) 
+, block_{}
+, block_size_( BLOCK_MAX_SIZE <= capacity ? BLOCK_MAX_SIZE : capacity )
+{}
+
+void ByteStream::write_block(const char* data, uint64_t len){
+  if(this->block_.size() >= block_size_){
+    this->buffer_.push_back(this->block_);
+    this->block_ = "";
+  }
+  this->block_.append(data, len);
+}
+
 
 // Push data to stream, but only as much as available capacity allows.
 void Writer::push( string data )
@@ -27,32 +38,26 @@ void Writer::push( string data )
   }
 
   if(s > a){
-    string sub = data.substr(0, a);
-    if(!sub.empty()){
-      this->buffer_.push_back(std::move(sub));
-    }
+    data = data.substr(0, a);
     s = a;
-  } else{
-    this->buffer_.push_back(std::move(data));   
   }
-  // updata state 
+  this->write_block(data.data(), s);
   this->bytes_pushed_ += s;
   this->bytes_buffered_ += s;
   this->available_capacity_ -= s;
+
 }
 
 // Signal that the stream has reached its ending. Nothing more will be written.
 void Writer::close()
 {
-  // debug( "Writer::close() not yet implemented" );
   this->is_closed_ = true;
 }
 
 // Has the stream been closed?
 bool Writer::is_closed() const
 {
-  // debug( "Writer::is_closed() not yet implemented" );
-  return this->is_closed_; // Your code here.
+  return this->is_closed_; 
 }
 
 // How many bytes can be pushed to the stream right now?
@@ -75,17 +80,25 @@ uint64_t Writer::bytes_pushed() const
 // the caller to do a lot of extra work.
 string_view Reader::peek() const
 {
-  return this->buffer_.front(); // Your code here.
+  // return this->buffer_.front(); 
+  if(!this->buffer_.empty()){
+    return this->buffer_.front();
+  }
+  return this->block_;
 }
+
 
 // Remove `len` bytes from the buffer.
 void Reader::pop( uint64_t len )
 {
-  // debug( "Reader::pop({}) not yet implemented", len );
+  if(len == 0){
+    return;
+  }
   uint64_t b = this->bytes_buffered_;
   if(len >= b){
     len = b;
     this->buffer_.clear();
+    this->block_ = "";
   }
   
   // update state
@@ -107,6 +120,10 @@ void Reader::pop( uint64_t len )
       this->buffer_.pop_front();
     }
   }
+  if(len != 0 && !this->block_.empty()){
+    len = len > this->block_.size() ? this->block_.size() : len;
+    this->block_ = this->block_.substr(len);
+  }
 }
 
 // Is the stream finished (closed and fully popped)?
@@ -114,7 +131,8 @@ bool Reader::is_finished() const
 {
   bool res = this->is_closed_;
   res &= (this->bytes_buffered_ == 0)? true : false;
-  return res; // Your code here.
+  res &= this->block_.empty();
+  return res;
 }
 
 // Number of bytes currently buffered (pushed and not popped)
