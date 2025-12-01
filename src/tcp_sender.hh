@@ -17,12 +17,14 @@ public:
     , buffer_{}
     , unsent_index_( 0 )
     , cur_window_size_( 1 )
-    , RTO_ms_( initial_RTO_ms )
-    , time_since_timer_start_ms_( 0 )
-    , retransmission_times_( 0 )
     , next_seqno_( 0 )
     , is_sent_FIN_( false )
     , is_timer_running_( false )
+    , RTO_ms_( initial_RTO_ms )
+    , time_since_timer_start_ms_( 0 )
+    , retransmission_times_( 0 )
+    
+    
   {}
 
   /* Generate an empty TCPSenderMessage */
@@ -56,11 +58,13 @@ private:
   std::deque<TCPSenderMessage> buffer_;
   uint64_t unsent_index_;
   uint16_t cur_window_size_;
-  uint64_t RTO_ms_;
-  uint64_t time_since_timer_start_ms_;
-  uint64_t retransmission_times_;
   uint64_t next_seqno_;
   bool is_sent_FIN_;
   bool is_timer_running_;
+  uint64_t RTO_ms_;
+  uint64_t time_since_timer_start_ms_;
+  uint64_t retransmission_times_;
+  
+  
   
 };

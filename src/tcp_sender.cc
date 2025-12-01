@@ -27,7 +27,7 @@ void TCPSender::push( const TransmitFunction& transmit )
   string payload = "";
   size_t peek_size;
   uint16_t window_size;
-  
+  // check before sub
   if(this->unsent_index_ + (this->cur_window_size_ == 0 ? 1 : this->cur_window_size_) > this->next_seqno_){
     window_size = this->unsent_index_ + (this->cur_window_size_ == 0 ? 1 : this->cur_window_size_) - this->next_seqno_;
   } else{
@@ -86,6 +86,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     window_size -= res.payload.size() + res.FIN;
     res.seqno = std::move( Wrap32::wrap( index, this->isn_ ) );
     index += res.sequence_length();
+    // set RST
     if ( this->reader().has_error() ) {
       res.RST = true;
       transmit( std::move( res ) );
@@ -106,6 +107,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     this->buffer_.push_back( res );
     // send res
     transmit( std::move( res ) );
+    // start timer
     this->is_timer_running_ = true;
   }
 
