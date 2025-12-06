@@ -6,6 +6,10 @@
 
 #include <memory>
 #include <queue>
+#include <unordered_map>
+#include <map>
+
+
 
 // A "network interface" that connects IP (the internet layer, or network layer)
 // with Ethernet (the network access layer, or link layer).
@@ -31,6 +35,22 @@
 class NetworkInterface
 {
 public:
+  // save ARP nexthop state
+  // for ARP cache & miss ARP cache 
+  struct ArpCacheState
+  {
+    EthernetAddress MAC_address_ {};
+    uint64_t timestamp_ {};
+  };
+
+  struct DatagramState
+  {
+    InternetDatagram dgram_ {};
+    uint64_t timestamp_ {};
+    bool had_resent_ { false };
+  };
+
+
   // An abstraction for the physical output port where the NetworkInterface sends Ethernet frames
   class OutputPort
   {
@@ -82,4 +102,6 @@ private:
 
   // Datagrams that have been received
   std::queue<InternetDatagram> datagrams_received_ {};
+  std::unordered_map<uint32_t, ArpCacheState> arp_cache_ {};
+  std::multimap<uint32_t, DatagramState> datagrams_queued_ {};
 };
