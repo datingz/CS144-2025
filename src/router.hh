@@ -10,6 +10,13 @@
 class Router
 {
 public:
+
+  struct Route_info{
+    uint32_t route_prefix_ {};
+    uint8_t prefix_length_ {};
+    std::optional<Address> next_hop_ {};
+    size_t interface_num_ {};
+  };
   // Add an interface to the router
   // \param[in] interface an already-constructed network interface
   // \returns The index of the interface after it has been added to the router
@@ -34,4 +41,7 @@ public:
 private:
   // The router's collection of network interfaces
   std::vector<std::shared_ptr<NetworkInterface>> interfaces_ {};
+  std::deque<Route_info> route_ip_ {};
+  Route_info default_router_ {};
+  bool has_default_router_ { false };
 };
