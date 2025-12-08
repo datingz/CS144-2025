@@ -21,6 +21,7 @@ void Router::add_route( const uint32_t route_prefix,
   a.prefix_length_ = prefix_length;
   a.next_hop_ = next_hop;
   a.interface_num_ = interface_num;
+  // find default router
   if(route_prefix == 0 && prefix_length == 0){
     this->has_default_router_ = true;
     this->default_router_.interface_num_ = interface_num;
@@ -72,18 +73,18 @@ void Router::route()
                 dgram.header.compute_checksum();
                 if(longest_prefix_match.next_hop_.has_value()){
                     NetworkInterface& send = *this->interface(longest_prefix_match.interface_num_);
-                    send.send_datagram(dgram, *longest_prefix_match.next_hop_);
+                    send.send_datagram(std::move(dgram), *longest_prefix_match.next_hop_);
                 } else{
                     Address add = Address::from_ipv4_numeric(IP_dst);
                     NetworkInterface& send = *this->interface(longest_prefix_match.interface_num_);
-                    send.send_datagram(dgram, std::move(add));
+                    send.send_datagram(std::move(dgram), std::move(add));
                 }
             }else if(no_match && dgram.header.ttl > 1 && this->has_default_router_){
                 dgram.header.ttl--;
                 dgram.header.compute_checksum();
                 // send to default router
                 NetworkInterface& send = *this->interface(this->default_router_.interface_num_);
-                send.send_datagram(dgram, *this->default_router_.next_hop_);
+                send.send_datagram(std::move(dgram), *this->default_router_.next_hop_);
             }
 
             interface.datagrams_received().pop();
