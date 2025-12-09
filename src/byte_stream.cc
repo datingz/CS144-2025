@@ -13,16 +13,18 @@ ByteStream::ByteStream( uint64_t capacity )
 , bytes_buffered_( 0 )
 , bytes_popped_( 0 )
 , bytes_pushed_( 0 ) 
-, block_{}
-, block_size_( BLOCK_MAX_SIZE <= capacity ? BLOCK_MAX_SIZE : capacity )
+, push_block_{}
+, BLOCK_SIZE_( BLOCK_MAX_SIZE <= capacity ? BLOCK_MAX_SIZE : capacity )
+, pop_block_{}
+, pop_block_size_{}
 {}
 
 void ByteStream::write_block(const char* data, uint64_t len){
-  if(this->block_.size() >= block_size_){
-    this->buffer_.push_back(this->block_);
-    this->block_ = "";
+  if(this->push_block_.size() >= BLOCK_SIZE_){
+    this->buffer_.push_back(this->push_block_);
+    this->push_block_ = "";
   }
-  this->block_.append(data, len);
+  this->push_block_.append(data, len);
 }
 
 
@@ -30,7 +32,6 @@ void ByteStream::write_block(const char* data, uint64_t len){
 void Writer::push( string data )
 {
   // Your code here (and in each method below)
-  // debug( "Writer::push({}) not yet implemented", data );
   uint64_t a = this->available_capacity();
   uint64_t s = data.size();
   if(s == 0){
@@ -80,11 +81,22 @@ uint64_t Writer::bytes_pushed() const
 // the caller to do a lot of extra work.
 string_view Reader::peek() const
 {
-  // return this->buffer_.front(); 
+  // if(!this->buffer_.empty()){
+  //   return this->buffer_.front();
+  // } 
+  // return this->push_block_;
+  
+  if(!this->pop_block_.empty()){
+    if(this->pop_block_size_ < this->pop_block_.size()){
+      return std::string_view(this->pop_block_.data() + this->pop_block_size_, this->pop_block_.size() - this->pop_block_size_);
+    }
+  }
   if(!this->buffer_.empty()){
     return this->buffer_.front();
-  }
-  return this->block_;
+  } 
+  return this->push_block_;
+
+
 }
 
 
@@ -98,7 +110,8 @@ void Reader::pop( uint64_t len )
   if(len >= b){
     len = b;
     this->buffer_.clear();
-    this->block_ = "";
+    this->push_block_ = "";
+    this->pop_block_ = "";
   }
   
   // update state
@@ -106,23 +119,26 @@ void Reader::pop( uint64_t len )
   this->available_capacity_ += len;
   this->bytes_popped_ += len;
 
-  while(len != 0 && !this->buffer_.empty()){
-    uint64_t s = this->buffer_.front().size();
-    if(s > len){ 
-      string sub = this->buffer_.front().substr(len);
-      len = 0;
-      this->buffer_.pop_front();
-      if(!sub.empty()){
-        this->buffer_.push_front(std::move(sub));
-      }
-    } else{
-      len -= s;
+  // if both empty, the bytes_buffered in the push_block
+  while(!this->buffer_.empty() || !this->pop_block_.empty()){
+    // if empty, get from buffer
+    if(this->pop_block_.empty()){
+      this->pop_block_ = std::move(this->buffer_.front());
       this->buffer_.pop_front();
     }
+    this->pop_block_size_ += len;
+    len = 0;
+    if(this->pop_block_size_ >= this->pop_block_.size()){
+      this->pop_block_size_ -= this->pop_block_.size();
+      this->pop_block_ = "";
+    }
+    if(this->pop_block_size_ < this->pop_block_.size()){
+      break;
+    }
   }
-  if(len != 0 && !this->block_.empty()){
-    len = len > this->block_.size() ? this->block_.size() : len;
-    this->block_ = this->block_.substr(len);
+  if(len != 0 && !this->push_block_.empty()){
+    len = len > this->push_block_.size() ? this->push_block_.size() : len;
+    this->push_block_ = this->push_block_.substr(len);
   }
 }
 
@@ -131,20 +147,18 @@ bool Reader::is_finished() const
 {
   bool res = this->is_closed_;
   res &= (this->bytes_buffered_ == 0)? true : false;
-  res &= this->block_.empty();
+  res &= this->push_block_.empty();
   return res;
 }
 
 // Number of bytes currently buffered (pushed and not popped)
 uint64_t Reader::bytes_buffered() const
 {
-  //debug( "Reader::bytes_buffered() not yet implemented" );
   return this->bytes_buffered_; // Your code here.
 }
 
 // Total number of bytes cumulatively popped from stream
 uint64_t Reader::bytes_popped() const
 {
-  // debug( "Reader::bytes_popped() not yet implemented" );
   return this->bytes_popped_; // Your code here.
 }

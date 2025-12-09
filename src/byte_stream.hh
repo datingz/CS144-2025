@@ -33,8 +33,10 @@ protected:
   uint64_t bytes_buffered_;
   uint64_t bytes_popped_;
   uint64_t bytes_pushed_;
-  std::string block_;
-  uint64_t block_size_;
+  std::string push_block_;
+  uint64_t BLOCK_SIZE_;
+  std::string pop_block_;
+  uint64_t pop_block_size_; 
 
 };
 
